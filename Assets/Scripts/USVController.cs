@@ -108,7 +108,7 @@ public class USVController : MonoBehaviour
 
     private void ApplyWaveFloating()
     {
-        if (!useWaveFloating || waves == null)
+        if (!useWaveFloating || !CanSampleWaves())
             return;
 
         if (preferExistingWaterFloat && waterFloat != null && waterFloat.enabled)
@@ -139,6 +139,15 @@ public class USVController : MonoBehaviour
         Quaternion targetRotation = Quaternion.LookRotation(forwardOnWater, waterNormal);
         Quaternion smoothedRotation = Quaternion.Slerp(rb.rotation, targetRotation, floatRotationSmooth * Time.fixedDeltaTime);
         rb.MoveRotation(smoothedRotation);
+    }
+
+    private bool CanSampleWaves()
+    {
+        if (waves == null)
+            return false;
+
+        MeshFilter meshFilter = waves.GetComponent<MeshFilter>();
+        return meshFilter != null && meshFilter.sharedMesh != null;
     }
 
     private Vector3 GetWaterPoint(Vector3 localOffset)
