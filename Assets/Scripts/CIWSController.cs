@@ -15,6 +15,12 @@ public class CIWSController : MonoBehaviour
     public float fireRate = 5f;
     public bool destroyTargetOnHit = true;
 
+    [Header("Projectile")]
+    public GameObject projectilePrefab;
+    public float projectileSpeed = 120f;
+    public float projectileLifeTime = 3f;
+    public float projectileSize = 0.25f;
+
     [Header("Turret References")]
     public Transform turretHead;
     public Transform firePoint;
@@ -149,33 +155,43 @@ public class CIWSController : MonoBehaviour
         Vector3 direction = (GetAimPoint(target) - origin).normalized;
 
         Debug.DrawRay(origin, direction * fireRange, aimLineColor, debugFireLineDuration);
-
-        RaycastHit[] hits = Physics.RaycastAll(origin, direction, fireRange, usvLayerMask, QueryTriggerInteraction.Ignore);
-        Transform hitTarget = GetClosestValidHit(hits);
-
-        if (hitTarget != null && destroyTargetOnHit)
-            Destroy(hitTarget.gameObject);
+        SpawnProjectile(origin, direction);
     }
 
-    private Transform GetClosestValidHit(RaycastHit[] hits)
+    private void SpawnProjectile(Vector3 origin, Vector3 direction)
     {
-        Transform closestTarget = null;
-        float closestDistance = float.MaxValue;
+        GameObject projectile = projectilePrefab != null
+            ? Instantiate(projectilePrefab, origin, Quaternion.LookRotation(direction, Vector3.up))
+            : CreateDefaultProjectile(origin, direction);
 
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Transform hitTarget = GetValidTargetTransform(hits[i].collider);
-            if (hitTarget == null)
-                continue;
+        CIWSProjectile ciwsProjectile = projectile.GetComponent<CIWSProjectile>();
+        if (ciwsProjectile == null)
+            ciwsProjectile = projectile.AddComponent<CIWSProjectile>();
 
-            if (hits[i].distance < closestDistance)
-            {
-                closestDistance = hits[i].distance;
-                closestTarget = hitTarget;
-            }
-        }
+        ciwsProjectile.Initialize(
+            direction,
+            projectileSpeed,
+            fireRange,
+            projectileLifeTime,
+            usvLayerMask,
+            usvTag,
+            useTagFilter,
+            destroyTargetOnHit);
+    }
 
-        return closestTarget;
+    private GameObject CreateDefaultProjectile(Vector3 origin, Vector3 direction)
+    {
+        GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        projectile.name = "CIWS_Projectile";
+        projectile.transform.position = origin;
+        projectile.transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+        projectile.transform.localScale = Vector3.one * projectileSize;
+
+        Collider projectileCollider = projectile.GetComponent<Collider>();
+        if (projectileCollider != null)
+            projectileCollider.isTrigger = true;
+
+        return projectile;
     }
 
     private Vector3 GetAimPoint(Transform target)
