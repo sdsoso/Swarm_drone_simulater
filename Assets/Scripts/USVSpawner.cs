@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class USVSpawner : MonoBehaviour
@@ -23,6 +24,7 @@ public class USVSpawner : MonoBehaviour
     public float spawnInterval = 5f;
     public float spawnHeightOffset = 0f;
     public bool alignToShipTarget = true;
+    public bool delayInitialSpawnUntilWavesReady = true;
 
     [Header("Auto Find By Name")]
     public bool autoFindMissingReferences = true;
@@ -44,8 +46,14 @@ public class USVSpawner : MonoBehaviour
             FindMissingReferences();
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
+        if (delayInitialSpawnUntilWavesReady)
+            yield return null;
+
+        if (waves == null)
+            waves = FindObjectOfType<Waves>();
+
         if (spawnOnStart)
             SpawnUSVs(spawnCount);
 
@@ -103,12 +111,21 @@ public class USVSpawner : MonoBehaviour
 
         Vector3 spawnPosition = center + new Vector3(randomPoint.x, 0f, randomPoint.y);
 
-        if (waves != null)
+        if (CanSampleWaves())
             spawnPosition.y = waves.GetHeight(spawnPosition) + spawnHeightOffset;
         else
             spawnPosition.y = center.y + spawnHeightOffset;
 
         return spawnPosition;
+    }
+
+    private bool CanSampleWaves()
+    {
+        if (waves == null)
+            return false;
+
+        MeshFilter meshFilter = waves.GetComponent<MeshFilter>();
+        return meshFilter != null && meshFilter.sharedMesh != null;
     }
 
     private Quaternion GetSpawnRotation(Vector3 spawnPosition)
