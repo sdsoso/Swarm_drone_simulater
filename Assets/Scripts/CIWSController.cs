@@ -27,6 +27,7 @@ public class CIWSController : MonoBehaviour
     public float epsilon = 0.01f;
     public bool useThreatPriorityQueue = true;
     public bool showThreatDebugLog = false;
+    public bool syncWeightsToExperimentManager = false;
 
     [Header("Ranges")]
     public float detectRange = 80f;
@@ -35,6 +36,7 @@ public class CIWSController : MonoBehaviour
     [Header("Firing")]
     public float fireRate = 5f;
     public bool destroyTargetOnHit = true;
+    public bool reportProjectileHitsToExperiment = false;
 
     [Header("Projectile")]
     public GameObject projectilePrefab;
@@ -82,9 +84,12 @@ public class CIWSController : MonoBehaviour
         if (defendedShip == null)
             defendedShip = transform.root;
 
-        ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
-        if (manager != null)
-            manager.SetThreatWeights(ttiWeight, alignmentWeight);
+        if (syncWeightsToExperimentManager)
+        {
+            ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
+            if (manager != null)
+                manager.SetThreatWeights(ttiWeight, alignmentWeight);
+        }
     }
 
     private void Update()
@@ -318,7 +323,8 @@ public class CIWSController : MonoBehaviour
             usvLayerMask,
             usvTag,
             useTagFilter,
-            destroyTargetOnHit);
+            destroyTargetOnHit,
+            reportProjectileHitsToExperiment);
     }
 
     private GameObject CreateDefaultProjectile(Vector3 origin, Vector3 direction)

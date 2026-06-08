@@ -7,6 +7,7 @@ public class CIWSProjectile : MonoBehaviour
     public float maxDistance = 60f;
     public float lifeTime = 3f;
     public bool destroyTargetOnHit = true;
+    public bool reportInterceptToExperiment = false;
 
     [Header("Target Filtering")]
     public string usvTag = "USV";
@@ -30,7 +31,8 @@ public class CIWSProjectile : MonoBehaviour
         LayerMask projectileTargetMask,
         string projectileTargetTag,
         bool projectileUseTagFilter,
-        bool projectileDestroyTargetOnHit)
+        bool projectileDestroyTargetOnHit,
+        bool projectileReportInterceptToExperiment = false)
     {
         direction = fireDirection.sqrMagnitude > 0.001f ? fireDirection.normalized : transform.forward;
         speed = projectileSpeed;
@@ -40,6 +42,7 @@ public class CIWSProjectile : MonoBehaviour
         usvTag = projectileTargetTag;
         useTagFilter = projectileUseTagFilter;
         destroyTargetOnHit = projectileDestroyTargetOnHit;
+        reportInterceptToExperiment = projectileReportInterceptToExperiment;
 
         startPosition = transform.position;
         spawnTime = Time.time;
@@ -96,20 +99,27 @@ public class CIWSProjectile : MonoBehaviour
 
         if (destroyTargetOnHit)
         {
-            USVExperimentTracker tracker = target.GetComponent<USVExperimentTracker>();
-            if (tracker != null)
-                tracker.MarkIntercepted();
-            else
-            {
-                ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
-                if (manager != null)
-                    manager.ReportIntercepted(target.gameObject);
-            }
+            if (reportInterceptToExperiment)
+                ReportIntercept(target);
 
             Destroy(target.gameObject);
         }
 
         Destroy(gameObject);
+    }
+
+    private void ReportIntercept(Transform target)
+    {
+        USVExperimentTracker tracker = target.GetComponent<USVExperimentTracker>();
+        if (tracker != null)
+        {
+            tracker.MarkIntercepted();
+            return;
+        }
+
+        ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
+        if (manager != null)
+            manager.ReportIntercepted(target.gameObject);
     }
 
     private Transform GetValidTargetTransform(Collider hitCollider)

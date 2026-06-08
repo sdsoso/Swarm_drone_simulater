@@ -25,7 +25,7 @@ public class USVSpawner : MonoBehaviour
     public float spawnHeightOffset = 0f;
     public bool alignToShipTarget = true;
     public bool delayInitialSpawnUntilWavesReady = true;
-    public bool registerSpawnedUSVsForExperiment = true;
+    public bool registerSpawnedUSVsForExperiment = false;
 
     [Header("Experiment Results")]
     public ExperimentResultManager experimentResultManager;
