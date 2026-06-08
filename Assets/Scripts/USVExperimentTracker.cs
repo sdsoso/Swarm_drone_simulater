@@ -8,16 +8,29 @@ public class USVExperimentTracker : MonoBehaviour
     public bool useShipTagFallback = true;
 
     private bool isCounted;
+    private ExperimentResultManager resultManager;
 
     public void Initialize(Transform shipTarget)
     {
+        Initialize(shipTarget, ExperimentResultManager.FindActiveManager());
+    }
+
+    public void Initialize(Transform shipTarget, ExperimentResultManager manager)
+    {
         friendlyShipTarget = shipTarget;
-        ExperimentResultManager.GetOrCreate().RegisterUSV(gameObject);
+        resultManager = manager;
+
+        if (resultManager != null)
+            resultManager.RegisterUSV(gameObject);
     }
 
     private void Start()
     {
-        ExperimentResultManager.GetOrCreate().RegisterUSV(gameObject);
+        if (resultManager == null)
+            resultManager = ExperimentResultManager.FindActiveManager();
+
+        if (resultManager != null)
+            resultManager.RegisterUSV(gameObject);
     }
 
     public void MarkIntercepted()
@@ -26,7 +39,8 @@ public class USVExperimentTracker : MonoBehaviour
             return;
 
         isCounted = true;
-        ExperimentResultManager.GetOrCreate().ReportIntercepted(gameObject);
+        if (resultManager != null)
+            resultManager.ReportIntercepted(gameObject);
     }
 
     public void MarkFailed()
@@ -35,7 +49,8 @@ public class USVExperimentTracker : MonoBehaviour
             return;
 
         isCounted = true;
-        ExperimentResultManager.GetOrCreate().ReportFailed(gameObject);
+        if (resultManager != null)
+            resultManager.ReportFailed(gameObject);
     }
 
     private void OnCollisionEnter(Collision collision)

@@ -27,6 +27,11 @@ public class USVSpawner : MonoBehaviour
     public bool delayInitialSpawnUntilWavesReady = true;
     public bool registerSpawnedUSVsForExperiment = true;
 
+    [Header("Experiment Results")]
+    public ExperimentResultManager experimentResultManager;
+    public bool autoFindExperimentResultManager = true;
+    public bool createExperimentResultManagerIfMissing = false;
+
     [Header("Auto Find By Name")]
     public bool autoFindMissingReferences = true;
     public string destroyerObjectName = "Destroyer_01";
@@ -45,6 +50,9 @@ public class USVSpawner : MonoBehaviour
 
         if (autoFindMissingReferences)
             FindMissingReferences();
+
+        if (autoFindExperimentResultManager)
+            FindExperimentResultManager();
     }
 
     private IEnumerator Start()
@@ -110,11 +118,22 @@ public class USVSpawner : MonoBehaviour
         if (instance == null)
             return;
 
+        if (experimentResultManager == null)
+            FindExperimentResultManager();
+
         USVExperimentTracker tracker = instance.GetComponent<USVExperimentTracker>();
         if (tracker == null)
             tracker = instance.AddComponent<USVExperimentTracker>();
 
-        tracker.Initialize(shipTarget);
+        tracker.Initialize(shipTarget, experimentResultManager);
+    }
+
+    private void FindExperimentResultManager()
+    {
+        experimentResultManager = ExperimentResultManager.FindActiveManager();
+
+        if (experimentResultManager == null && createExperimentResultManagerIfMissing)
+            experimentResultManager = ExperimentResultManager.GetOrCreate();
     }
 
     public Vector3 GetRandomSpawnPosition(Vector3 center)

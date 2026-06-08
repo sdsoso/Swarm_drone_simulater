@@ -82,7 +82,9 @@ public class CIWSController : MonoBehaviour
         if (defendedShip == null)
             defendedShip = transform.root;
 
-        ExperimentResultManager.GetOrCreate().SetThreatWeights(ttiWeight, alignmentWeight);
+        ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
+        if (manager != null)
+            manager.SetThreatWeights(ttiWeight, alignmentWeight);
     }
 
     private void Update()
