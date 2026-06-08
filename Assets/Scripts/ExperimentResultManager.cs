@@ -31,14 +31,19 @@ public class ExperimentResultManager : MonoBehaviour
     private bool experimentStarted;
     private bool experimentEnded;
 
-    public static ExperimentResultManager GetOrCreate()
+    public static ExperimentResultManager FindActiveManager()
     {
         if (Instance != null)
             return Instance;
 
-        ExperimentResultManager existingManager = FindObjectOfType<ExperimentResultManager>();
-        if (existingManager != null)
-            return existingManager;
+        return FindObjectOfType<ExperimentResultManager>();
+    }
+
+    public static ExperimentResultManager GetOrCreate()
+    {
+        ExperimentResultManager manager = FindActiveManager();
+        if (manager != null)
+            return manager;
 
         GameObject managerObject = new GameObject("ExperimentResultManager");
         return managerObject.AddComponent<ExperimentResultManager>();

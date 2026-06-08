@@ -100,7 +100,11 @@ public class CIWSProjectile : MonoBehaviour
             if (tracker != null)
                 tracker.MarkIntercepted();
             else
-                ExperimentResultManager.GetOrCreate().ReportIntercepted(target.gameObject);
+            {
+                ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
+                if (manager != null)
+                    manager.ReportIntercepted(target.gameObject);
+            }
 
             Destroy(target.gameObject);
         }
