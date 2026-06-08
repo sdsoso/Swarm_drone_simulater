@@ -95,7 +95,15 @@ public class CIWSProjectile : MonoBehaviour
             return;
 
         if (destroyTargetOnHit)
+        {
+            USVExperimentTracker tracker = target.GetComponent<USVExperimentTracker>();
+            if (tracker != null)
+                tracker.MarkIntercepted();
+            else
+                ExperimentResultManager.GetOrCreate().ReportIntercepted(target.gameObject);
+
             Destroy(target.gameObject);
+        }
 
         Destroy(gameObject);
     }
