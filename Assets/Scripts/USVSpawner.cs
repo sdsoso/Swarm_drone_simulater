@@ -26,6 +26,8 @@ public class USVSpawner : MonoBehaviour
     public bool alignToShipTarget = true;
     public bool delayInitialSpawnUntilWavesReady = true;
     public bool registerSpawnedUSVsForExperiment = false;
+    public bool addShipCollisionFailureTracker = true;
+    public bool destroyUSVOnShipCollision = true;
 
     [Header("Experiment Results")]
     public ExperimentResultManager experimentResultManager;
@@ -107,13 +109,13 @@ public class USVSpawner : MonoBehaviour
 
         controller.SetTarget(shipTarget);
 
-        if (registerSpawnedUSVsForExperiment)
-            RegisterSpawnedUSV(instance);
+        if (registerSpawnedUSVsForExperiment || addShipCollisionFailureTracker)
+            ConfigureExperimentTracker(instance);
 
         return controller;
     }
 
-    private void RegisterSpawnedUSV(GameObject instance)
+    private void ConfigureExperimentTracker(GameObject instance)
     {
         if (instance == null)
             return;
@@ -125,7 +127,13 @@ public class USVSpawner : MonoBehaviour
         if (tracker == null)
             tracker = instance.AddComponent<USVExperimentTracker>();
 
-        tracker.Initialize(shipTarget, experimentResultManager);
+        tracker.registerWithExperimentManager = registerSpawnedUSVsForExperiment;
+        tracker.destroyOnFailure = destroyUSVOnShipCollision;
+
+        if (registerSpawnedUSVsForExperiment)
+            tracker.Initialize(shipTarget, experimentResultManager);
+        else
+            tracker.friendlyShipTarget = shipTarget;
     }
 
     private void FindExperimentResultManager()

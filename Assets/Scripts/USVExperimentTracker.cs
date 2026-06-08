@@ -6,6 +6,9 @@ public class USVExperimentTracker : MonoBehaviour
     public Transform friendlyShipTarget;
     public string friendlyShipTag = "Ship";
     public bool useShipTagFallback = true;
+    public bool registerWithExperimentManager = true;
+    public bool destroyOnFailure = true;
+    public float destroyDelay = 0f;
 
     private bool isCounted;
     private ExperimentResultManager resultManager;
@@ -20,7 +23,7 @@ public class USVExperimentTracker : MonoBehaviour
         friendlyShipTarget = shipTarget;
         resultManager = manager;
 
-        if (resultManager != null)
+        if (registerWithExperimentManager && resultManager != null)
             resultManager.RegisterUSV(gameObject);
     }
 
@@ -29,7 +32,7 @@ public class USVExperimentTracker : MonoBehaviour
         if (resultManager == null)
             resultManager = ExperimentResultManager.FindActiveManager();
 
-        if (resultManager != null)
+        if (registerWithExperimentManager && resultManager != null)
             resultManager.RegisterUSV(gameObject);
     }
 
@@ -39,7 +42,7 @@ public class USVExperimentTracker : MonoBehaviour
             return;
 
         isCounted = true;
-        if (resultManager != null)
+        if (registerWithExperimentManager && resultManager != null)
             resultManager.ReportIntercepted(gameObject);
     }
 
@@ -49,8 +52,14 @@ public class USVExperimentTracker : MonoBehaviour
             return;
 
         isCounted = true;
-        if (resultManager != null)
+
+        // Report the failure before destroying the USV so the result manager can
+        // still use this GameObject instance ID for duplicate-count protection.
+        if (registerWithExperimentManager && resultManager != null)
             resultManager.ReportFailed(gameObject);
+
+        if (destroyOnFailure)
+            Destroy(gameObject, Mathf.Max(0f, destroyDelay));
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -73,9 +82,21 @@ public class USVExperimentTracker : MonoBehaviour
 
         Transform otherRoot = other.attachedRigidbody != null ? other.attachedRigidbody.transform : other.transform.root;
 
-        if (friendlyShipTarget != null && (other.transform == friendlyShipTarget || otherRoot == friendlyShipTarget || other.transform.IsChildOf(friendlyShipTarget)))
+        if (friendlyShipTarget != null &&
+            (other.transform == friendlyShipTarget ||
+             otherRoot == friendlyShipTarget ||
+             other.transform.IsChildOf(friendlyShipTarget) ||
+             (otherRoot != null && otherRoot.IsChildOf(friendlyShipTarget))))
+        {
+            return true;
+        }
+
+        if (!useShipTagFallback)
+            return false;
+
+        if (other.gameObject.tag == friendlyShipTag)
             return true;
 
-        return useShipTagFallback && other.gameObject.tag == friendlyShipTag;
+        return otherRoot != null && otherRoot.gameObject.tag == friendlyShipTag;
     }
 }
