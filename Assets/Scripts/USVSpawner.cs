@@ -25,6 +25,7 @@ public class USVSpawner : MonoBehaviour
     public float spawnHeightOffset = 0f;
     public bool alignToShipTarget = true;
     public bool delayInitialSpawnUntilWavesReady = true;
+    public bool registerSpawnedUSVsForExperiment = true;
 
     [Header("Auto Find By Name")]
     public bool autoFindMissingReferences = true;
@@ -97,7 +98,23 @@ public class USVSpawner : MonoBehaviour
             controller = instance.AddComponent<USVController>();
 
         controller.SetTarget(shipTarget);
+
+        if (registerSpawnedUSVsForExperiment)
+            RegisterSpawnedUSV(instance);
+
         return controller;
+    }
+
+    private void RegisterSpawnedUSV(GameObject instance)
+    {
+        if (instance == null)
+            return;
+
+        USVExperimentTracker tracker = instance.GetComponent<USVExperimentTracker>();
+        if (tracker == null)
+            tracker = instance.AddComponent<USVExperimentTracker>();
+
+        tracker.Initialize(shipTarget);
     }
 
     public Vector3 GetRandomSpawnPosition(Vector3 center)

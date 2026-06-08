@@ -1,11 +1,32 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CIWSController : MonoBehaviour
 {
+    [System.Serializable]
+    public class ThreatTarget
+    {
+        public Transform target;
+        public Rigidbody rb;
+        public float distance;
+        public float closingSpeed;
+        public float tti;
+        public float alignment;
+        public float threatScore;
+    }
+
     [Header("Target Filtering")]
     public string usvTag = "USV";
     public bool useTagFilter = true;
     public LayerMask usvLayerMask = ~0;
+
+    [Header("Threat Selection")]
+    public Transform defendedShip;
+    public float ttiWeight = 0.7f;
+    public float alignmentWeight = 0.3f;
+    public float epsilon = 0.01f;
+    public bool useThreatPriorityQueue = true;
+    public bool showThreatDebugLog = false;
 
     [Header("Ranges")]
     public float detectRange = 80f;
@@ -37,13 +58,17 @@ public class CIWSController : MonoBehaviour
     public float debugFireLineDuration = 0.1f;
 
     private Transform currentTarget;
+    private ThreatTarget currentThreat;
     private float nextFireTime;
     private readonly Collider[] detectedColliders = new Collider[64];
+    private readonly List<ThreatTarget> threatQueue = new List<ThreatTarget>(64);
+    private readonly List<Transform> uniqueTargets = new List<Transform>(64);
 
     private void Reset()
     {
         turretHead = transform;
         firePoint = transform;
+        defendedShip = transform.root;
     }
 
     private void Awake()
@@ -53,11 +78,18 @@ public class CIWSController : MonoBehaviour
 
         if (firePoint == null)
             firePoint = turretHead;
+
+        if (defendedShip == null)
+            defendedShip = transform.root;
+
+        ExperimentResultManager.GetOrCreate().SetThreatWeights(ttiWeight, alignmentWeight);
     }
 
     private void Update()
     {
-        currentTarget = FindClosestTarget();
+        RefreshThreatQueue();
+        currentThreat = SelectTargetFromThreatQueue();
+        currentTarget = currentThreat != null ? currentThreat.target : null;
 
         if (currentTarget == null)
             return;
@@ -71,8 +103,13 @@ public class CIWSController : MonoBehaviour
         }
     }
 
-    private Transform FindClosestTarget()
+    private void RefreshThreatQueue()
     {
+        // Build a lightweight priority queue every frame from currently detected USVs.
+        // List sorting is used instead of PriorityQueue for broad Unity/C# compatibility.
+        threatQueue.Clear();
+        uniqueTargets.Clear();
+
         int hitCount = Physics.OverlapSphereNonAlloc(
             transform.position,
             detectRange,
@@ -80,55 +117,160 @@ public class CIWSController : MonoBehaviour
             usvLayerMask,
             QueryTriggerInteraction.Ignore);
 
-        Transform closestTarget = null;
-        float closestDistanceSqr = float.MaxValue;
-
         for (int i = 0; i < hitCount; i++)
         {
             Collider detectedCollider = detectedColliders[i];
-            if (detectedCollider == null)
+            if (!IsValidTarget(detectedCollider, out Transform target, out Rigidbody targetRb))
                 continue;
 
-            Transform target = GetValidTargetTransform(detectedCollider);
-            if (target == null)
+            if (uniqueTargets.Contains(target))
                 continue;
 
-            float distanceSqr = (target.position - transform.position).sqrMagnitude;
-            if (distanceSqr < closestDistanceSqr)
+            uniqueTargets.Add(target);
+
+            ThreatTarget threat = new ThreatTarget
             {
-                closestDistanceSqr = distanceSqr;
-                closestTarget = target;
+                target = target,
+                rb = targetRb
+            };
+
+            // Threat metrics are measured relative to the defended ship, not just the turret.
+            threat.distance = defendedShip != null
+                ? Vector3.Distance(target.position, defendedShip.position)
+                : Vector3.Distance(target.position, transform.position);
+            threat.closingSpeed = CalculateClosingSpeed(target, targetRb);
+            threat.tti = CalculateTTI(threat.distance, threat.closingSpeed);
+            threat.alignment = CalculateAlignment(target, targetRb);
+            threat.threatScore = CalculateThreatScore(threat.tti, threat.alignment, threat.closingSpeed);
+
+            threatQueue.Add(threat);
+
+            if (showThreatDebugLog)
+            {
+                Debug.Log(
+                    $"[CIWS Threat] target={target.name}, distance={threat.distance:F2}, " +
+                    $"closingSpeed={threat.closingSpeed:F2}, TTI={threat.tti:F2}, " +
+                    $"alignment={threat.alignment:F2}, threatScore={threat.threatScore:F3}", this);
             }
         }
 
-        return closestTarget;
+        if (useThreatPriorityQueue)
+            threatQueue.Sort((a, b) => b.threatScore.CompareTo(a.threatScore));
+        else
+            threatQueue.Sort((a, b) => a.distance.CompareTo(b.distance));
     }
 
-    private Transform GetValidTargetTransform(Collider detectedCollider)
+    private ThreatTarget SelectTargetFromThreatQueue()
     {
-        Transform target = detectedCollider.attachedRigidbody != null
-            ? detectedCollider.attachedRigidbody.transform
-            : detectedCollider.transform.root;
+        // Only fire-range targets can be engaged; detect-range targets stay in the queue
+        // until they become close enough to shoot.
+        for (int i = 0; i < threatQueue.Count; i++)
+        {
+            ThreatTarget threat = threatQueue[i];
+            if (!IsTargetInFireRange(threat))
+                continue;
 
-        if (!IsUSVTarget(detectedCollider, target))
-            return null;
+            if (showThreatDebugLog)
+                Debug.Log($"[CIWS Selected] target={threat.target.name}, threatScore={threat.threatScore:F3}", this);
 
-        return target;
+            return threat;
+        }
+
+        return null;
     }
 
-    private bool IsUSVTarget(Collider detectedCollider, Transform target)
+    private float CalculateThreatScore(float tti, float alignment, float closingSpeed)
     {
-        if (!useTagFilter)
-            return true;
+        // ThreatScore = ttiWeight * (1 / TTI) + alignmentWeight * Alignment.
+        // Non-closing targets are deliberately pushed to the bottom of the queue.
+        if (closingSpeed <= epsilon)
+            return -1f + alignmentWeight * alignment;
 
-        if (detectedCollider.gameObject.tag == usvTag)
-            return true;
+        return ttiWeight * (1f / Mathf.Max(tti, epsilon)) + alignmentWeight * alignment;
+    }
 
-        return target != null && target.gameObject.tag == usvTag;
+    private float CalculateTTI(float distance, float closingSpeed)
+    {
+        return distance / Mathf.Max(closingSpeed, epsilon);
+    }
+
+    private float CalculateAlignment(Transform target, Rigidbody targetRb)
+    {
+        if (target == null || defendedShip == null)
+            return 0f;
+
+        Vector3 velocity = targetRb != null ? targetRb.linearVelocity : Vector3.zero;
+        velocity.y = 0f;
+
+        Vector3 moveDirection = velocity.sqrMagnitude > 0.01f ? velocity.normalized : target.forward;
+        moveDirection.y = 0f;
+
+        Vector3 toShip = defendedShip.position - target.position;
+        toShip.y = 0f;
+
+        if (moveDirection.sqrMagnitude < 0.001f || toShip.sqrMagnitude < 0.001f)
+            return 0f;
+
+        return Vector3.Dot(moveDirection.normalized, toShip.normalized);
+    }
+
+    private float CalculateClosingSpeed(Transform target, Rigidbody targetRb)
+    {
+        // Closing speed is the velocity component along the target-to-ship vector.
+        // This avoids treating fast side-slipping USVs as high TTI threats.
+        if (target == null || targetRb == null || defendedShip == null)
+            return 0f;
+
+        Vector3 toShip = defendedShip.position - target.position;
+        toShip.y = 0f;
+
+        if (toShip.sqrMagnitude < 0.001f)
+            return 0f;
+
+        Vector3 velocity = targetRb.linearVelocity;
+        velocity.y = 0f;
+
+        return Vector3.Dot(velocity, toShip.normalized);
+    }
+
+    private bool IsTargetInFireRange(ThreatTarget threat)
+    {
+        return threat != null && IsTargetInFireRange(threat.target);
+    }
+
+    private bool IsTargetInFireRange(Transform target)
+    {
+        if (target == null || firePoint == null)
+            return false;
+
+        return (GetAimPoint(target) - firePoint.position).sqrMagnitude <= fireRange * fireRange;
+    }
+
+    private bool IsValidTarget(Collider detectedCollider, out Transform target, out Rigidbody targetRb)
+    {
+        target = null;
+        targetRb = null;
+
+        if (detectedCollider == null)
+            return false;
+
+        targetRb = detectedCollider.attachedRigidbody;
+        target = targetRb != null ? targetRb.transform : detectedCollider.transform.root;
+
+        if (target == null)
+            return false;
+
+        if (useTagFilter && detectedCollider.gameObject.tag != usvTag && target.gameObject.tag != usvTag)
+            return false;
+
+        return true;
     }
 
     private void RotateTurretToward(Transform target)
     {
+        if (target == null || turretHead == null)
+            return;
+
         Vector3 aimDirection = GetAimPoint(target) - turretHead.position;
 
         if (yawOnlyRotation)
@@ -144,13 +286,11 @@ public class CIWSController : MonoBehaviour
             rotateSpeed * Time.deltaTime);
     }
 
-    private bool IsTargetInFireRange(Transform target)
-    {
-        return (GetAimPoint(target) - firePoint.position).sqrMagnitude <= fireRange * fireRange;
-    }
-
     private void FireAt(Transform target)
     {
+        if (target == null || firePoint == null)
+            return;
+
         Vector3 origin = firePoint.position;
         Vector3 direction = (GetAimPoint(target) - origin).normalized;
 
@@ -196,6 +336,9 @@ public class CIWSController : MonoBehaviour
 
     private Vector3 GetAimPoint(Transform target)
     {
+        if (target == null)
+            return transform.position;
+
         Collider targetCollider = target.GetComponentInChildren<Collider>();
         if (targetCollider != null)
             return targetCollider.bounds.center;
