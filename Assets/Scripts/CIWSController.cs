@@ -3,6 +3,14 @@ using UnityEngine;
 
 public class CIWSController : MonoBehaviour
 {
+    public enum TargetSelectionAlgorithm
+    {
+        DistancePriority,
+        TTIPriority,
+        TTIAlignmentWeighted,
+        RandomTarget
+    }
+
     [System.Serializable]
     public class ThreatTarget
     {
@@ -21,11 +29,12 @@ public class CIWSController : MonoBehaviour
     public LayerMask usvLayerMask = ~0;
 
     [Header("Threat Selection")]
+    public TargetSelectionAlgorithm selectedAlgorithm = TargetSelectionAlgorithm.TTIAlignmentWeighted;
     public Transform defendedShip;
     public float ttiWeight = 0.7f;
     public float alignmentWeight = 0.3f;
     public float epsilon = 0.01f;
-    public bool useThreatPriorityQueue = true;
+    public bool useThreatPriorityQueue = true; // Legacy toggle kept for existing scenes; enum selection now controls scoring.
     public bool showThreatDebugLog = false;
     public bool syncWeightsToExperimentManager = false;
 
@@ -65,6 +74,9 @@ public class CIWSController : MonoBehaviour
     private readonly Collider[] detectedColliders = new Collider[64];
     private readonly List<ThreatTarget> threatQueue = new List<ThreatTarget>(64);
     private readonly List<Transform> uniqueTargets = new List<Transform>(64);
+    private bool warnedMissingProjectilePrefab;
+
+    public string SelectedAlgorithmName { get { return selectedAlgorithm.ToString(); } }
 
     private void Reset()
     {
@@ -75,12 +87,6 @@ public class CIWSController : MonoBehaviour
 
     private void Awake()
     {
-        if (turretHead == null)
-            turretHead = transform;
-
-        if (firePoint == null)
-            firePoint = turretHead;
-
         if (defendedShip == null)
             defendedShip = transform.root;
 
@@ -88,14 +94,14 @@ public class CIWSController : MonoBehaviour
         {
             ExperimentResultManager manager = ExperimentResultManager.FindActiveManager();
             if (manager != null)
-                manager.SetThreatWeights(ttiWeight, alignmentWeight);
+                manager.SetCIWSMetadata(SelectedAlgorithmName, ttiWeight, alignmentWeight);
         }
     }
 
     private void Update()
     {
         RefreshThreatQueue();
-        currentThreat = SelectTargetFromThreatQueue();
+        currentThreat = SelectTarget();
         currentTarget = currentThreat != null ? currentThreat.target : null;
 
         if (currentTarget == null)
@@ -148,7 +154,7 @@ public class CIWSController : MonoBehaviour
             threat.closingSpeed = CalculateClosingSpeed(target, targetRb);
             threat.tti = CalculateTTI(threat.distance, threat.closingSpeed);
             threat.alignment = CalculateAlignment(target, targetRb);
-            threat.threatScore = CalculateThreatScore(threat.tti, threat.alignment, threat.closingSpeed);
+            threat.threatScore = CalculateScoreForSelectedAlgorithm(threat);
 
             threatQueue.Add(threat);
 
@@ -157,14 +163,20 @@ public class CIWSController : MonoBehaviour
                 Debug.Log(
                     $"[CIWS Threat] target={target.name}, distance={threat.distance:F2}, " +
                     $"closingSpeed={threat.closingSpeed:F2}, TTI={threat.tti:F2}, " +
-                    $"alignment={threat.alignment:F2}, threatScore={threat.threatScore:F3}", this);
+                    $"alignment={threat.alignment:F2}, threatScore={threat.threatScore:F3}, algorithm={selectedAlgorithm}", this);
             }
         }
 
-        if (useThreatPriorityQueue)
+        if (selectedAlgorithm != TargetSelectionAlgorithm.RandomTarget)
             threatQueue.Sort((a, b) => b.threatScore.CompareTo(a.threatScore));
-        else
-            threatQueue.Sort((a, b) => a.distance.CompareTo(b.distance));
+    }
+
+    private ThreatTarget SelectTarget()
+    {
+        if (selectedAlgorithm == TargetSelectionAlgorithm.RandomTarget)
+            return SelectRandomTargetInFireRange();
+
+        return SelectTargetFromThreatQueue();
     }
 
     private ThreatTarget SelectTargetFromThreatQueue()
@@ -177,23 +189,85 @@ public class CIWSController : MonoBehaviour
             if (!IsTargetInFireRange(threat))
                 continue;
 
-            if (showThreatDebugLog)
-                Debug.Log($"[CIWS Selected] target={threat.target.name}, threatScore={threat.threatScore:F3}", this);
-
+            LogSelectedTarget(threat);
             return threat;
         }
 
         return null;
     }
 
-    private float CalculateThreatScore(float tti, float alignment, float closingSpeed)
+    private ThreatTarget SelectRandomTargetInFireRange()
+    {
+        List<ThreatTarget> fireRangeTargets = new List<ThreatTarget>();
+
+        for (int i = 0; i < threatQueue.Count; i++)
+        {
+            ThreatTarget threat = threatQueue[i];
+            if (IsTargetInFireRange(threat))
+                fireRangeTargets.Add(threat);
+        }
+
+        if (fireRangeTargets.Count == 0)
+            return null;
+
+        ThreatTarget selectedThreat = fireRangeTargets[Random.Range(0, fireRangeTargets.Count)];
+        LogSelectedTarget(selectedThreat);
+        return selectedThreat;
+    }
+
+    private void LogSelectedTarget(ThreatTarget threat)
+    {
+        if (!showThreatDebugLog || threat == null || threat.target == null)
+            return;
+
+        Debug.Log($"[CIWS Selected] target={threat.target.name}, algorithm={selectedAlgorithm}, threatScore={threat.threatScore:F3}", this);
+    }
+
+    private float CalculateScoreForSelectedAlgorithm(ThreatTarget threat)
+    {
+        if (threat == null)
+            return float.MinValue;
+
+        switch (selectedAlgorithm)
+        {
+            case TargetSelectionAlgorithm.DistancePriority:
+                return CalculateDistanceScore(threat.distance);
+            case TargetSelectionAlgorithm.TTIPriority:
+                return CalculateTTIScore(threat.tti, threat.closingSpeed);
+            case TargetSelectionAlgorithm.RandomTarget:
+                return 0f;
+            case TargetSelectionAlgorithm.TTIAlignmentWeighted:
+            default:
+                return CalculateWeightedScore(threat.tti, threat.alignment, threat.closingSpeed);
+        }
+    }
+
+    private float CalculateDistanceScore(float distance)
+    {
+        return 1f / Mathf.Max(distance, epsilon);
+    }
+
+    private float CalculateTTIScore(float tti, float closingSpeed)
+    {
+        if (closingSpeed <= epsilon)
+            return -1f;
+
+        return 1f / Mathf.Max(tti, epsilon);
+    }
+
+    private float CalculateAlignmentScore(float alignment)
+    {
+        return alignment;
+    }
+
+    private float CalculateWeightedScore(float tti, float alignment, float closingSpeed)
     {
         // ThreatScore = ttiWeight * (1 / TTI) + alignmentWeight * Alignment.
         // Non-closing targets are deliberately pushed to the bottom of the queue.
         if (closingSpeed <= epsilon)
-            return -1f + alignmentWeight * alignment;
+            return -1f + alignmentWeight * CalculateAlignmentScore(alignment);
 
-        return ttiWeight * (1f / Mathf.Max(tti, epsilon)) + alignmentWeight * alignment;
+        return ttiWeight * CalculateTTIScore(tti, closingSpeed) + alignmentWeight * CalculateAlignmentScore(alignment);
     }
 
     private float CalculateTTI(float distance, float closingSpeed)
@@ -247,10 +321,11 @@ public class CIWSController : MonoBehaviour
 
     private bool IsTargetInFireRange(Transform target)
     {
-        if (target == null || firePoint == null)
+        if (target == null)
             return false;
 
-        return (GetAimPoint(target) - firePoint.position).sqrMagnitude <= fireRange * fireRange;
+        Vector3 origin = firePoint != null ? firePoint.position : transform.position;
+        return (GetAimPoint(target) - origin).sqrMagnitude <= fireRange * fireRange;
     }
 
     private bool IsValidTarget(Collider detectedCollider, out Transform target, out Rigidbody targetRb)
@@ -295,10 +370,10 @@ public class CIWSController : MonoBehaviour
 
     private void FireAt(Transform target)
     {
-        if (target == null || firePoint == null)
+        if (target == null)
             return;
 
-        Vector3 origin = firePoint.position;
+        Vector3 origin = firePoint != null ? firePoint.position : transform.position;
         Vector3 direction = (GetAimPoint(target) - origin).normalized;
 
         Debug.DrawRay(origin, direction * fireRange, aimLineColor, debugFireLineDuration);
@@ -307,6 +382,12 @@ public class CIWSController : MonoBehaviour
 
     private void SpawnProjectile(Vector3 origin, Vector3 direction)
     {
+        if (projectilePrefab == null && !warnedMissingProjectilePrefab)
+        {
+            Debug.LogWarning("CIWSController has no projectilePrefab assigned; using a temporary sphere projectile.", this);
+            warnedMissingProjectilePrefab = true;
+        }
+
         GameObject projectile = projectilePrefab != null
             ? Instantiate(projectilePrefab, origin, Quaternion.LookRotation(direction, Vector3.up))
             : CreateDefaultProjectile(origin, direction);

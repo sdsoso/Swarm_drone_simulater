@@ -9,6 +9,11 @@ public class ExperimentResultManager : MonoBehaviour
 
     [Header("Experiment Metadata")]
     public string algorithmName = "TTI_Alignment_Priority";
+    public string selectedAlgorithm = "TTIAlignmentWeighted";
+    public int trialIndex;
+    public int usvCountSetting;
+    public float usvDensity;
+    public string experimentMemo;
     public string csvFileName = "experiment_results.csv";
     public bool saveCsvOnExperimentEnd = true;
 
@@ -65,6 +70,16 @@ public class ExperimentResultManager : MonoBehaviour
         if (!acceptWeightsFromCIWS)
             return;
 
+        ttiWeight = newTtiWeight;
+        alignmentWeight = newAlignmentWeight;
+    }
+
+    public void SetCIWSMetadata(string newSelectedAlgorithm, float newTtiWeight, float newAlignmentWeight)
+    {
+        if (!acceptWeightsFromCIWS)
+            return;
+
+        selectedAlgorithm = string.IsNullOrEmpty(newSelectedAlgorithm) ? selectedAlgorithm : newSelectedAlgorithm;
         ttiWeight = newTtiWeight;
         alignmentWeight = newAlignmentWeight;
     }
@@ -134,39 +149,76 @@ public class ExperimentResultManager : MonoBehaviour
         totalEngagementTime = experimentEndTime - experimentStartTime;
         failureRate = totalUSVCount > 0 ? (float)failedCount / totalUSVCount : 0f;
 
+        SyncMetadataFromFirstActiveCIWS();
+
+        string csvPath = GetCsvPath();
+
         Debug.Log(
             "Experiment Finished\n" +
+            $"Algorithm Name: {algorithmName}\n" +
+            $"Selected Algorithm: {selectedAlgorithm}\n" +
+            $"TTI Weight: {ttiWeight:F3}\n" +
+            $"Alignment Weight: {alignmentWeight:F3}\n" +
             $"Total USVs: {totalUSVCount}\n" +
             $"Intercepted USVs: {interceptedCount}\n" +
             $"Failed USVs: {failedCount}\n" +
             $"Failure Rate: {failureRate:P2}\n" +
-            $"Total Engagement Time: {totalEngagementTime:F2}s");
+            $"Total Engagement Time: {totalEngagementTime:F2}s\n" +
+            $"CSV Path: {csvPath}", this);
 
         if (saveCsvOnExperimentEnd)
-            AppendCsvResult();
+            AppendCsvResult(csvPath);
     }
 
-    private void AppendCsvResult()
+    private void SyncMetadataFromFirstActiveCIWS()
+    {
+        if (!acceptWeightsFromCIWS)
+            return;
+
+        CIWSController ciws = FindObjectOfType<CIWSController>();
+        if (ciws == null)
+            return;
+
+        SetCIWSMetadata(ciws.SelectedAlgorithmName, ciws.ttiWeight, ciws.alignmentWeight);
+    }
+
+    private string GetCsvPath()
+    {
+        return Path.Combine(Application.persistentDataPath, csvFileName);
+    }
+
+    private void AppendCsvResult(string path)
     {
         // Append one row per completed run so repeated experiments can be compared in one CSV.
-        string path = Path.Combine(Application.persistentDataPath, csvFileName);
         bool writeHeader = !File.Exists(path);
 
         using (StreamWriter writer = new StreamWriter(path, true))
         {
             if (writeHeader)
-                writer.WriteLine("RunId,TotalUSVs,Intercepted,Failed,FailureRate,TotalEngagementTime,AlgorithmName,TTIWeight,AlignmentWeight");
+            {
+                writer.WriteLine(
+                    "RunId,algorithmName,selectedAlgorithm,ttiWeight,alignmentWeight,totalUSVCount," +
+                    "interceptedCount,failedCount,experimentStartTime,experimentEndTime,totalEngagementTime," +
+                    "failureRate,usvDensity,usvCountSetting,trialIndex,experimentMemo");
+            }
 
             writer.WriteLine(string.Join(",",
                 System.DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
+                EscapeCsv(algorithmName),
+                EscapeCsv(selectedAlgorithm),
+                ttiWeight.ToString(CultureInfo.InvariantCulture),
+                alignmentWeight.ToString(CultureInfo.InvariantCulture),
                 totalUSVCount.ToString(CultureInfo.InvariantCulture),
                 interceptedCount.ToString(CultureInfo.InvariantCulture),
                 failedCount.ToString(CultureInfo.InvariantCulture),
-                failureRate.ToString(CultureInfo.InvariantCulture),
+                experimentStartTime.ToString(CultureInfo.InvariantCulture),
+                experimentEndTime.ToString(CultureInfo.InvariantCulture),
                 totalEngagementTime.ToString(CultureInfo.InvariantCulture),
-                EscapeCsv(algorithmName),
-                ttiWeight.ToString(CultureInfo.InvariantCulture),
-                alignmentWeight.ToString(CultureInfo.InvariantCulture)));
+                failureRate.ToString(CultureInfo.InvariantCulture),
+                usvDensity.ToString(CultureInfo.InvariantCulture),
+                usvCountSetting.ToString(CultureInfo.InvariantCulture),
+                trialIndex.ToString(CultureInfo.InvariantCulture),
+                EscapeCsv(experimentMemo)));
         }
 
         Debug.Log($"Experiment CSV saved: {path}", this);
