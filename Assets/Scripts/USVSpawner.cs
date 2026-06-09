@@ -25,7 +25,7 @@ public class USVSpawner : MonoBehaviour
     public float spawnHeightOffset = 0f;
     public bool alignToShipTarget = true;
     public bool delayInitialSpawnUntilWavesReady = true;
-    public bool registerSpawnedUSVsForExperiment = false;
+    public bool registerSpawnedUSVsForExperiment = true;
     public bool addShipCollisionFailureTracker = true;
     public bool destroyUSVOnShipCollision = true;
 
@@ -33,6 +33,7 @@ public class USVSpawner : MonoBehaviour
     public ExperimentResultManager experimentResultManager;
     public bool autoFindExperimentResultManager = true;
     public bool createExperimentResultManagerIfMissing = false;
+    public bool showExperimentSetupWarnings = true;
 
     [Header("Auto Find By Name")]
     public bool autoFindMissingReferences = true;
@@ -128,12 +129,25 @@ public class USVSpawner : MonoBehaviour
             tracker = instance.AddComponent<USVExperimentTracker>();
 
         tracker.registerWithExperimentManager = registerSpawnedUSVsForExperiment;
+        tracker.showDebugLog = showExperimentSetupWarnings;
         tracker.destroyOnFailure = destroyUSVOnShipCollision;
 
         if (registerSpawnedUSVsForExperiment)
+        {
+            if (experimentResultManager == null && showExperimentSetupWarnings)
+            {
+                Debug.LogWarning(
+                    "USVSpawner is set to register experiment results, but no ExperimentResultManager was found. " +
+                    "Add one to the scene or assign it to the spawner.",
+                    this);
+            }
+
             tracker.Initialize(shipTarget, experimentResultManager);
+        }
         else
+        {
             tracker.friendlyShipTarget = shipTarget;
+        }
     }
 
     private void FindExperimentResultManager()

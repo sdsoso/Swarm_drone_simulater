@@ -9,6 +9,7 @@ public class USVExperimentTracker : MonoBehaviour
     public bool registerWithExperimentManager = true;
     public bool destroyOnFailure = true;
     public float destroyDelay = 0f;
+    public bool showDebugLog = false;
 
     private bool isCounted;
     private ExperimentResultManager resultManager;
@@ -23,17 +24,12 @@ public class USVExperimentTracker : MonoBehaviour
         friendlyShipTarget = shipTarget;
         resultManager = manager;
 
-        if (registerWithExperimentManager && resultManager != null)
-            resultManager.RegisterUSV(gameObject);
+        RegisterWithManagerIfPossible();
     }
 
     private void Start()
     {
-        if (resultManager == null)
-            resultManager = ExperimentResultManager.FindActiveManager();
-
-        if (registerWithExperimentManager && resultManager != null)
-            resultManager.RegisterUSV(gameObject);
+        RegisterWithManagerIfPossible();
     }
 
     public void MarkIntercepted()
@@ -42,7 +38,7 @@ public class USVExperimentTracker : MonoBehaviour
             return;
 
         isCounted = true;
-        if (registerWithExperimentManager && resultManager != null)
+        if (registerWithExperimentManager && EnsureResultManager())
             resultManager.ReportIntercepted(gameObject);
     }
 
@@ -55,8 +51,17 @@ public class USVExperimentTracker : MonoBehaviour
 
         // Report the failure before destroying the USV so the result manager can
         // still use this GameObject instance ID for duplicate-count protection.
-        if (registerWithExperimentManager && resultManager != null)
+        if (registerWithExperimentManager && EnsureResultManager())
+        {
             resultManager.ReportFailed(gameObject);
+
+            if (showDebugLog)
+                Debug.Log($"USV failed by ship collision: {name}", this);
+        }
+        else if (showDebugLog)
+        {
+            Debug.LogWarning($"USV collided with ship but no ExperimentResultManager is available or registration is disabled: {name}", this);
+        }
 
         if (destroyOnFailure)
             Destroy(gameObject, Mathf.Max(0f, destroyDelay));
@@ -72,6 +77,31 @@ public class USVExperimentTracker : MonoBehaviour
     {
         if (IsFriendlyShip(other))
             MarkFailed();
+    }
+
+    private void RegisterWithManagerIfPossible()
+    {
+        if (!registerWithExperimentManager)
+            return;
+
+        if (!EnsureResultManager())
+        {
+            if (showDebugLog)
+                Debug.LogWarning($"USVExperimentTracker could not find ExperimentResultManager for {name}.", this);
+
+            return;
+        }
+
+        resultManager.RegisterUSV(gameObject);
+    }
+
+    private bool EnsureResultManager()
+    {
+        if (resultManager != null)
+            return true;
+
+        resultManager = ExperimentResultManager.FindActiveManager();
+        return resultManager != null;
     }
 
     private bool IsFriendlyShip(Collider other)
