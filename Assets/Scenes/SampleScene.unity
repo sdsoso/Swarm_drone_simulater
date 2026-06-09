@@ -150,6 +150,79 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2133016002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &132563575 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400002, guid: ddffd765805b6402e856954a9bda2c6a, type: 3}
+  m_PrefabInstance: {fileID: 1820810854}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &144947622
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 144947624}
+  - component: {fileID: 144947623}
+  m_Layer: 0
+  m_Name: USVSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &144947623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144947622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d194f96bb6434e348ec7cf8d76fba1ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::USVSpawner
+  usvPrefab: {fileID: 3210242191295913695, guid: 98db26e894714ab42a5329d6cd767c2f, type: 3}
+  destroyerOrigin: {fileID: 2133016002}
+  shipTarget: {fileID: 2133016002}
+  spawnParent: {fileID: 0}
+  spawnRadius: 500
+  spawnMode: 1
+  spawnCount: 60
+  spawnOnStart: 1
+  autoSpawnRepeatedly: 0
+  spawnInterval: 5
+  spawnHeightOffset: 0
+  alignToShipTarget: 1
+  delayInitialSpawnUntilWavesReady: 1
+  registerSpawnedUSVsForExperiment: 1
+  addShipCollisionFailureTracker: 1
+  destroyUSVOnShipCollision: 1
+  experimentResultManager: {fileID: 1327634657}
+  autoFindExperimentResultManager: 1
+  createExperimentResultManagerIfMissing: 0
+  autoFindMissingReferences: 1
+  destroyerObjectName: Destroyer_01
+  shipObjectName: Ship
+  drawSpawnRadius: 1
+  spawnRadiusColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+--- !u!4 &144947624
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144947622}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 63.99362, y: -0, z: 49.40951}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -527,6 +600,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Destroyer_01
       objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
+      propertyPath: m_TagString
+      value: Ship
+      objectReference: {fileID: 0}
     - target: {fileID: 400002, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
       propertyPath: m_LocalPosition.x
       value: 37.6
@@ -599,6 +676,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100002, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2133016003}
+    - targetCorrespondingSourceObject: {fileID: 100002, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2133016006}
   m_SourcePrefab: {fileID: 100100000, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
 --- !u!4 &686082498 stripped
 Transform:
@@ -754,6 +834,68 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 86d032671082945c49fe5dc0569983aa, type: 3}
+--- !u!1 &1204611739 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100008, guid: ddffd765805b6402e856954a9bda2c6a, type: 3}
+  m_PrefabInstance: {fileID: 1820810854}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1327634656
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1327634658}
+  - component: {fileID: 1327634657}
+  m_Layer: 0
+  m_Name: ResultManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1327634657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1327634656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5beb33a0ab634541a98bf9d71fd8e627, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExperimentResultManager
+  algorithmName: TTI_Alignment_Priority
+  csvFileName: experiment_results.csv
+  saveCsvOnExperimentEnd: 1
+  ttiWeight: 0.1
+  alignmentWeight: 0.9
+  acceptWeightsFromCIWS: 1
+  totalUSVCount: 0
+  interceptedCount: 0
+  failedCount: 0
+  experimentStartTime: 0
+  experimentEndTime: 0
+  totalEngagementTime: 0
+  failureRate: 0
+--- !u!4 &1327634658
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1327634656}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 42.67392, y: 0, z: 38.34987}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1504254435
 GameObject:
   m_ObjectHideFlags: 0
@@ -852,7 +994,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100008, guid: ddffd765805b6402e856954a9bda2c6a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2086533447}
   m_SourcePrefab: {fileID: 100100000, guid: ddffd765805b6402e856954a9bda2c6a, type: 3}
 --- !u!1 &1904094314
 GameObject:
@@ -890,6 +1035,48 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400008, guid: ddffd765805b6402e856954a9bda2c6a, type: 3}
   m_PrefabInstance: {fileID: 1820810854}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2086533447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204611739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ca4e86570cf4749915bb0f6753bf945, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CIWSController
+  usvTag: USV
+  useTagFilter: 1
+  usvLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  defendedShip: {fileID: 2133016002}
+  ttiWeight: 0.1
+  alignmentWeight: 0.9
+  epsilon: 0.01
+  useThreatPriorityQueue: 1
+  showThreatDebugLog: 0
+  syncWeightsToExperimentManager: 1
+  detectRange: 500
+  fireRange: 400
+  fireRate: 5
+  destroyTargetOnHit: 1
+  reportProjectileHitsToExperiment: 1
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 200
+  projectileLifeTime: 3
+  projectileSize: 0.25
+  turretHead: {fileID: 2086533445}
+  firePoint: {fileID: 132563575}
+  rotateSpeed: 180
+  yawOnlyRotation: 0
+  drawGizmos: 1
+  detectRangeColor: {r: 0, g: 1, b: 1, a: 0.25}
+  fireRangeColor: {r: 1, g: 0, b: 0, a: 0.25}
+  aimLineColor: {r: 1, g: 0, b: 0, a: 1}
+  debugFireLineDuration: 0.1
 --- !u!1 &2133016000 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100002, guid: d60b58adbb3f648478b5ab750d7b7036, type: 3}
@@ -948,6 +1135,27 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!65 &2133016006
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2133016000}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.3940163, y: 3.1972847, z: 17.400448}
+  m_Center: {x: -0.14315224, y: -1.0986426, z: -0.2931385}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -957,3 +1165,5 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 409461874}
   - {fileID: 666387285}
+  - {fileID: 144947624}
+  - {fileID: 1327634658}

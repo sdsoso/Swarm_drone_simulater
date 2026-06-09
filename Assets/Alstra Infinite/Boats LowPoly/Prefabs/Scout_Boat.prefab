@@ -12,9 +12,11 @@ GameObject:
   - component: {fileID: 1182504390877334464}
   - component: {fileID: 4003117549188661002}
   - component: {fileID: 6521665370918471702}
+  - component: {fileID: 4466935109681341016}
+  - component: {fileID: 4715427846790141796}
   m_Layer: 0
   m_Name: Scout_Boat
-  m_TagString: Untagged
+  m_TagString: USV
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -26,12 +28,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3210242191295913695}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 4.3197, y: 0.7978, z: 0}
+  m_LocalScale: {x: 0.4886277, y: 0.69358027, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1182504390877334464
 MeshFilter:
@@ -40,7 +43,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3210242191295913695}
-  m_Mesh: {fileID: -3811911705681396582, guid: 9b7cc2e501ae9c546b416e06ed63191b, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 08c993bd8edcc1946804959352e5bca9, type: 2}
 --- !u!23 &4003117549188661002
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -52,14 +55,21 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 284830dd46ce77c4696ef63853c7cf5e, type: 2}
+  - {fileID: 2100000, guid: e868229096c9257489571f35b150c23e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -77,9 +87,12 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!64 &6521665370918471702
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -88,9 +101,87 @@ MeshCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3210242191295913695}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 0
+  serializedVersion: 5
+  m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: -3811911705681396582, guid: 9b7cc2e501ae9c546b416e06ed63191b, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 08c993bd8edcc1946804959352e5bca9, type: 2}
+--- !u!54 &4466935109681341016
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3210242191295913695}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &4715427846790141796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3210242191295913695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e7188443a40409fa8adb20953cc990c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::USVController
+  target: {fileID: 0}
+  stopDistance: 2
+  moveSpeed: 35
+  acceleration: 25
+  turnSpeed: 200
+  faceTargetWhileMoving: 1
+  evasiveStrength: 0.8
+  evasiveFrequency: 0.8
+  finalChargeDistance: 100
+  evasiveBlendSpeed: 2.5
+  separationDistance: 5
+  separationForce: 1.2
+  separationLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  useSeparationTagFilter: 1
+  usvTag: USV
+  useWaveFloating: 1
+  preferExistingWaterFloat: 1
+  waterHeightOffset: 0
+  floatHeightSmooth: 8
+  floatRotationSmooth: 4
+  frontProbeOffset: {x: 0, y: 0, z: 2}
+  backProbeOffset: {x: 0, y: 0, z: -2}
+  leftProbeOffset: {x: -1.5, y: 0, z: 0}
+  rightProbeOffset: {x: 1.5, y: 0, z: 0}
+  drawDebugGizmos: 1
+  targetLineColor: {r: 1, g: 0, b: 0, a: 1}
+  floatProbeColor: {r: 0, g: 1, b: 1, a: 1}
+  separationColor: {r: 1, g: 0.5, b: 0, a: 0.25}
+  desiredDirectionColor: {r: 1, g: 0, b: 1, a: 1}
